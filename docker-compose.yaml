@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  stanza-api-demo:
+    build: .
+    ports:
+       - "9277:9277"   # Metrics and REST endpoint
+  prometheus:
+     image: prom/prometheus:latest
+     container_name: stanza-api-prometheus
+     restart: unless-stopped
+     user: root
+     volumes:
+       - ./prometheus-config:/prometheus-config/
+       - prometheus-data:/prometheus/
+     command: --web.enable-remote-write-receiver --web.enable-lifecycle  --config.file=/prometheus-config/prometheus.yaml
+     ports:
+       - "9790:9090"   # Main Prom port
+  grafana:
+    build: ./grafana
+    ports:
+      - '3000:3000'
+
+volumes:
+  prometheus-data:

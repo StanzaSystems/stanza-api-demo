@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: stanza-api-client
+    static_configs:
+      - targets: ["stanza-api-client:9277"]
