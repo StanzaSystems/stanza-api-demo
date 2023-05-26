@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: stanza/hub/v1/quota.proto
 
-package quotav1
+package hubv1
 
 import (
 	_ "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2/options"
