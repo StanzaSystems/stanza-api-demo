@@ -3,7 +3,8 @@ services:
   stanza-api-demo:
     build: .
     ports:
-       - "9277:9277"   # Metrics and REST endpoint
+       - "9277:9277"   # Metrics 
+       - "9278:9278"   # Status and REST endpoint
   prometheus:
      image: prom/prometheus:latest
      container_name: stanza-api-prometheus
