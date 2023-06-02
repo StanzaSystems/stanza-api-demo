@@ -11,10 +11,12 @@ import (
 
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
-	pb "github.com/StanzaSystems/stanza-api-demo/hubv1"
+	pb "github.com/StanzaSystems/stanza-api-demo/gen/go/stanza/hub/v1"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,17 +24,21 @@ type requests struct {
 	Tags          string `json:"tags"` //format: foo=bar,baz=quux etc
 	Duration      string `json:"duration"`
 	duration_time time.Duration
-	Rate          int   `json:"rate"`
-	PriorityBoost int32 `json:"priority_boost"`
-	Weight        int32 `json:"weight"`
+	Rate          int     `json:"rate"`
+	PriorityBoost int32   `json:"priority_boost"`
+	Weight        float32 `json:"weight"`
 	parsedTags    map[string]string
 	started       *time.Time
 	ended         *time.Time
+	APIkey        string `json:"apikey"`
+	Environment   string `json:"environment"`
+	Decorator     string `json:"decorator"`
 }
 
 type RequestRunner struct {
 	client  pb.QuotaServiceClient
 	history []*requests
+	m       *meters
 }
 
 func MakeRequestRunner() *RequestRunner {
@@ -40,11 +46,11 @@ func MakeRequestRunner() *RequestRunner {
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
-	defer conn.Close()
 	client := pb.NewQuotaServiceClient(conn)
 	return &RequestRunner{
 		client:  client,
 		history: make([]*requests, 0),
+		m:       MakeMeters(),
 	}
 }
 
@@ -61,8 +67,21 @@ func (r *RequestRunner) postRequest(c *gin.Context) {
 		return
 	}
 
+	if reqs.APIkey == "" {
+		reqs.APIkey = apikey_default
+	}
+	if reqs.Decorator == "" {
+		reqs.Decorator = decoratorName
+	}
+	if reqs.Environment == "" {
+		reqs.Environment = env
+	}
+
 	splitTags := strings.Split(reqs.Tags, ",")
 	for _, tagKV := range splitTags {
+		if len(tagKV) == 0 {
+			continue
+		}
 		st := strings.Split(tagKV, "=")
 		if len(st) != 2 {
 			fmt.Printf("Post request - can't parse tags\n")
@@ -80,12 +99,11 @@ func (r *RequestRunner) postRequest(c *gin.Context) {
 	}
 	reqs.duration_time = dur
 
-	r.requestQuota(&reqs)
+	go r.requestQuota(&reqs)
 	c.Writer.WriteHeader(http.StatusOK)
 }
 
 func (r *RequestRunner) status(c *gin.Context) {
-	fmt.Printf("Status request")
 	c.HTML(http.StatusOK, "status.tmpl", gin.H{"Time": fmt.Sprintf("%v", time.Now())})
 }
 
@@ -115,19 +133,18 @@ func (r *RequestRunner) requestQuota(reqs *requests) {
 
 		req := pb.GetTokenRequest{
 			S: &pb.DecoratorFeatureSelector{
-				DecoratorName: decoratorName,
-				Environment:   env,
+				DecoratorName: reqs.Decorator,
+				Environment:   reqs.Environment,
 				Tags:          tags,
 			},
+			Weight:        &reqs.Weight,
 			PriorityBoost: &reqs.PriorityBoost,
 		}
 
 		go func() {
 			wg.Add(1)
 			defer wg.Done()
-			got := doReq(r.client, &req)
-			// todo do meters
-			fmt.Printf("%v", got)
+			go r.doReq(r.client, &req, reqs.APIkey)
 		}()
 	}
 
@@ -135,14 +152,28 @@ func (r *RequestRunner) requestQuota(reqs *requests) {
 	reqs.ended = &end
 
 	wg.Wait()
+
+	fmt.Printf("done ")
 }
 
-func doReq(client pb.QuotaServiceClient, request *pb.GetTokenRequest) bool {
+func (r *RequestRunner) doReq(client pb.QuotaServiceClient, request *pb.GetTokenRequest, apikeystr string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
-	ctx = metadata.AppendToOutgoingContext(ctx, "X-Stanza-Key", apikey)
 
-	r, err := client.GetToken(ctx, request)
+	labels := make(map[string]string)
+	labels["priorityBoost"] = fmt.Sprintf("%d", *request.PriorityBoost)
+	labels["decorator"] = *&request.S.DecoratorName
+	labels["environment"] = *&request.S.Environment
+	labels["apikey"] = apikeystr
+
+	for _, l := range request.S.GetTags() {
+		labels[l.Key] = l.Value
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "X-Stanza-Key", apikeystr)
+	resp, err := client.GetToken(ctx, request)
+
+	fmt.Printf("Request, response, error: %+v %+v %+v\n", *request, resp, err)
 	if verbose {
 		if err != nil {
 			log.Printf("Error %v\n", err)
@@ -151,8 +182,23 @@ func doReq(client pb.QuotaServiceClient, request *pb.GetTokenRequest) bool {
 		}
 	}
 
-	if err != nil {
-		return false
+	e, ok := status.FromError(err)
+	if !ok {
+		r.m.GetQuotaErrorCounter(labels).With(labels).Inc()
+		return
 	}
-	return r.Granted
+
+	if err != nil && e.Code() != codes.ResourceExhausted {
+		r.m.GetQuotaErrorCounter(labels).With(labels).Inc()
+		return
+	}
+
+	if e.Code() == codes.ResourceExhausted {
+		r.m.GetQuotaNotGrantedCounter(labels).With(labels).Inc()
+		return
+	}
+
+	// no error, granted
+	r.m.GetQuotaGrantedCounter(labels).With(labels).Inc()
+
 }

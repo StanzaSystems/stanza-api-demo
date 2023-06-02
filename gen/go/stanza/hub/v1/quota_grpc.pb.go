@@ -29,9 +29,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QuotaServiceClient interface {
-	// Required for V0. Issue: https://github.com/StanzaSystems/stanza-hub/issues/25
 	GetToken(ctx context.Context, in *GetTokenRequest, opts ...grpc.CallOption) (*GetTokenResponse, error)
-	// All rpcs below this required for V1. Issue: https://github.com/StanzaSystems/stanza-hub/issues/120
 	GetTokenLease(ctx context.Context, in *GetTokenLeaseRequest, opts ...grpc.CallOption) (*GetTokenLeaseResponse, error)
 	SetTokenLeaseConsumed(ctx context.Context, in *SetTokenLeaseConsumedRequest, opts ...grpc.CallOption) (*SetTokenLeaseConsumedResponse, error)
 	// Used by ingress decorators to validate Hub-generated tokens.
@@ -86,9 +84,7 @@ func (c *quotaServiceClient) ValidateToken(ctx context.Context, in *ValidateToke
 // All implementations should embed UnimplementedQuotaServiceServer
 // for forward compatibility
 type QuotaServiceServer interface {
-	// Required for V0. Issue: https://github.com/StanzaSystems/stanza-hub/issues/25
 	GetToken(context.Context, *GetTokenRequest) (*GetTokenResponse, error)
-	// All rpcs below this required for V1. Issue: https://github.com/StanzaSystems/stanza-hub/issues/120
 	GetTokenLease(context.Context, *GetTokenLeaseRequest) (*GetTokenLeaseResponse, error)
 	SetTokenLeaseConsumed(context.Context, *SetTokenLeaseConsumedRequest) (*SetTokenLeaseConsumedResponse, error)
 	// Used by ingress decorators to validate Hub-generated tokens.

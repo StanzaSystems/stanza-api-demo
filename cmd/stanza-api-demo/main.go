@@ -19,14 +19,18 @@ var (
 	rest_port int
 )
 
+// defaults, may be overridden by requests
 const (
-	decoratorName = "Expensive Limited Resource"
-	env           = "tiered_quota"
-	apikey        = "2dacc6dd-e1ec-4b09-ac02-ff3bfa2213df"
+	decoratorName  = "Expensive Limited Resource"
+	env            = "tiered_quota"
+	apikey_default = "2dacc6dd-e1ec-4b09-ac02-ff3bfa2213df"
 )
 
 func main() {
-	flag.StringVar(&hub, "hub", "localhost:9020", "The host:port hub to issue queries against.")
+	// we need to fix ALB for grpc in demo before flipping over to this. also some issues connecting to dev to debug :(
+	//flag.StringVar(&hub, "hub", "hub.demo.getstanza.io:9020", "The hub address host:port to issue queries against.")
+	//flag.StringVar(&hub, "hub", "hub.dev.getstanza.dev:9020", "The hub address host:port to issue queries against.")
+	flag.StringVar(&hub, "hub", "localhost:9020", "The hub address host:port to issue queries against.")
 	flag.BoolVar(&verbose, "verbose", false, "Print out details on every success/failure.")
 	flag.IntVar(&port, "metrics_port", 9277, "Prom metrics server port")
 	flag.IntVar(&rest_port, "rest_port", 9278, "REST API and status page")
