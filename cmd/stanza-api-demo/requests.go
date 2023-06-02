@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -42,7 +44,13 @@ type RequestRunner struct {
 }
 
 func MakeRequestRunner() *RequestRunner {
-	conn, err := grpc.Dial(hub, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	config := &tls.Config{} // use default system CA
+	creds := credentials.NewTLS(config)
+	if hub_insecure {
+		creds = insecure.NewCredentials()
+	}
+
+	conn, err := grpc.Dial(hub, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
