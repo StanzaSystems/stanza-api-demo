@@ -11,6 +11,9 @@ import (
 
 // TODO (Laura): add a page that shows currently running requests / recent history
 // TODO (Laura): graph burst and best effort statuses
+// TODO (Laura): sort out dev throughput issue
+// TODO (Laura): add demo ALB and update default
+// TODO (Laura): add scripts/cli tool to run them
 
 var (
 	hub          string
@@ -28,7 +31,7 @@ const (
 )
 
 func main() {
-	// we need to fix ALB for grpc in demo before flipping over to this. also some issues connecting to dev to debug :(
+	// we need to fix ALB for grpc in demo before flipping over to this.
 	//flag.StringVar(&hub, "hub", "hub.demo.getstanza.io:9020", "The hub address host:port to issue queries against.")
 	flag.StringVar(&hub, "hub", "hub.dev.getstanza.dev:9020", "The hub address host:port to issue queries against.")
 	flag.BoolVar(&hub_insecure, "hub_insecure", false, "Skip Hub TLS validation (for local development only).")

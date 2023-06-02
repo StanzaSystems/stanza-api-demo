@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -64,14 +65,11 @@ func MakeRequestRunner() *RequestRunner {
 
 // postRequests starts a set of requests from JSON received in the request body.
 func (r *RequestRunner) postRequest(c *gin.Context) {
-	fmt.Printf("Post request\n")
-
 	var reqs requests
 	reqs.parsedTags = make(map[string]string)
 
 	if err := c.BindJSON(&reqs); err != nil {
 		c.Writer.WriteHeader(http.StatusBadRequest)
-		fmt.Printf("Post request - bad request %+v\n", err)
 		return
 	}
 
@@ -92,17 +90,20 @@ func (r *RequestRunner) postRequest(c *gin.Context) {
 		}
 		st := strings.Split(tagKV, "=")
 		if len(st) != 2 {
-			fmt.Printf("Post request - can't parse tags\n")
 			c.Writer.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		reqs.parsedTags[st[0]] = st[1]
 	}
 
+	if reqs.Rate > 2000 {
+		c.Writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	dur, err := time.ParseDuration(reqs.Duration)
 	if err != nil {
 		c.Writer.WriteHeader(http.StatusBadRequest)
-		fmt.Printf("Post request - can't parse duration %+v\n", err)
 		return
 	}
 	reqs.duration_time = dur
@@ -116,8 +117,6 @@ func (r *RequestRunner) status(c *gin.Context) {
 }
 
 func (r *RequestRunner) requestQuota(reqs *requests) {
-	fmt.Printf("Running requests %+v\n", reqs)
-
 	count := reqs.Rate * int(reqs.duration_time.Seconds())
 	r.history = append(r.history, &requests{})
 	start := time.Now()
@@ -160,8 +159,6 @@ func (r *RequestRunner) requestQuota(reqs *requests) {
 	reqs.ended = &end
 
 	wg.Wait()
-
-	fmt.Printf("done ")
 }
 
 func (r *RequestRunner) doReq(client pb.QuotaServiceClient, request *pb.GetTokenRequest, apikeystr string) {
@@ -173,15 +170,11 @@ func (r *RequestRunner) doReq(client pb.QuotaServiceClient, request *pb.GetToken
 	labels["decorator"] = *&request.S.DecoratorName
 	labels["environment"] = *&request.S.Environment
 	labels["apikey"] = apikeystr
-
-	for _, l := range request.S.GetTags() {
-		labels[l.Key] = l.Value
-	}
+	labels["tags"] = tagsToStr(request.S.GetTags())
 
 	ctx = metadata.AppendToOutgoingContext(ctx, "X-Stanza-Key", apikeystr)
 	resp, err := client.GetToken(ctx, request)
 
-	fmt.Printf("Request, response, error: %+v %+v %+v\n", *request, resp, err)
 	if verbose {
 		if err != nil {
 			log.Printf("Error %v\n", err)
@@ -192,21 +185,43 @@ func (r *RequestRunner) doReq(client pb.QuotaServiceClient, request *pb.GetToken
 
 	e, ok := status.FromError(err)
 	if !ok {
-		r.m.GetQuotaErrorCounter(labels).With(labels).Inc()
+		r.m.GetQuotaErrorCounter().With(labels).Inc()
 		return
 	}
 
 	if err != nil && e.Code() != codes.ResourceExhausted {
-		r.m.GetQuotaErrorCounter(labels).With(labels).Inc()
+		r.m.GetQuotaErrorCounter().With(labels).Inc()
 		return
 	}
 
 	if e.Code() == codes.ResourceExhausted {
-		r.m.GetQuotaNotGrantedCounter(labels).With(labels).Inc()
+		r.m.GetQuotaNotGrantedCounter().With(labels).Inc()
 		return
 	}
 
 	// no error, granted
-	r.m.GetQuotaGrantedCounter(labels).With(labels).Inc()
+	if resp.Granted {
+		r.m.GetQuotaGrantedCounter().With(labels).Inc()
+	}
+}
 
+func tagsToStr(tags []*pb.Tag) string {
+	result := ""
+	m := make(map[string]string)
+
+	keys := make([]string, 0)
+	for _, t := range tags {
+		keys = append(keys, t.Key)
+		m[t.Key] = t.Value
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		result = result + k + "=" + m[k] + ","
+	}
+
+	if len(result) > 0 {
+		return result[0 : len(result)-1]
+	} else {
+		return result
+	}
 }
