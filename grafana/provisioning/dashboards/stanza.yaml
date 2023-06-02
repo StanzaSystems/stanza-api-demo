@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+ - name: 'Stanza'
+   folder: 'Stanza'
+   folderUid: ''
+   type: file
+   allowUiUpdates: true
+   updateIntervalSeconds: 5
+   options:
+     path:  /var/lib/grafana/dashboards
