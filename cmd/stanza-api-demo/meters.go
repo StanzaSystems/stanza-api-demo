@@ -1,8 +1,6 @@
 package main
 
 import (
-	"sync"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -20,8 +18,7 @@ type meters struct {
 	quota_granted     *prometheus.CounterVec
 	quota_not_granted *prometheus.CounterVec
 	quota_error       *prometheus.CounterVec
-
-	lock sync.Mutex
+	latency           prometheus.Histogram
 }
 
 func MakeMeters() *meters {
@@ -50,6 +47,12 @@ func MakeMeters() *meters {
 		},
 		labels)
 
+	res.latency = promauto.NewHistogram(
+		prometheus.HistogramOpts{
+			Name: "stanza_demo_quota_latency",
+			Help: "Latency distribution for requests to Stanza Hub",
+		},
+	)
 	return &res
 }
 
