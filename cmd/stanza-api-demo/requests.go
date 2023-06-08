@@ -18,7 +18,16 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 
+	gokitlog "github.com/go-kit/log"
+	"github.com/go-kit/log/level"
+
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+
+	"github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp"
+	configpb "github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp/grpc_gcp"
 	pb "github.com/StanzaSystems/stanza-api-demo/gen/go/stanza/hub/v1"
 	"github.com/gin-gonic/gin"
 )
@@ -51,7 +60,43 @@ func MakeRequestRunner() *RequestRunner {
 		creds = insecure.NewCredentials()
 	}
 
-	conn, err := grpc.Dial(hub, grpc.WithTransportCredentials(creds))
+	apiConfig := &configpb.ApiConfig{
+		ChannelPool: &configpb.ChannelPoolConfig{
+			MaxSize:                          10,
+			MaxConcurrentStreamsLowWatermark: 25,
+		},
+	}
+	c, err := protojson.Marshal(apiConfig)
+	if err != nil {
+		log.Fatalf("cannot json encode config: %v", err)
+	}
+	jsonCfg := string(c)
+
+	/*logger := gokitlog.NewLogfmtLogger(os.Stderr)
+	rpcLogger := gokitlog.With(logger, "service", "gRPC/client", "component", "stanza-api-demo")
+	logTraceID := func(ctx context.Context) logging.Fields {
+		dl, _ := ctx.Deadline()
+		left := time.Until(dl)
+		return logging.Fields{"deadline_remaining", left.String()}
+	}*/
+
+	conn, err := grpc.Dial(hub,
+		grpc.WithTransportCredentials(creds),
+		grpc.WithDefaultServiceConfig(
+			fmt.Sprintf(
+				`{"loadBalancingConfig": [{"%s":%s}]}`,
+				grpcgcp.Name,
+				jsonCfg,
+			),
+		),
+		grpc.WithChainUnaryInterceptor(
+			// Order matters e.g. tracing interceptor have to create span first for the later exemplars to work.
+			grpcgcp.GCPUnaryClientInterceptor,
+			grpc_prometheus.UnaryClientInterceptor,
+			//logging.UnaryClientInterceptor(interceptorLogger(rpcLogger), logging.WithFieldsFromContext(logTraceID)),
+		),
+	)
+
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -167,19 +212,32 @@ func (r *RequestRunner) doReq(client pb.QuotaServiceClient, request *pb.GetToken
 
 	labels := make(map[string]string)
 	labels["priorityBoost"] = fmt.Sprintf("%d", *request.PriorityBoost)
-	labels["decorator"] = *&request.S.DecoratorName
-	labels["environment"] = *&request.S.Environment
+	labels["decorator"] = request.S.DecoratorName
+	labels["environment"] = request.S.Environment
 	labels["apikey"] = apikeystr
 	labels["tags"] = tagsToStr(request.S.GetTags())
 
 	ctx = metadata.AppendToOutgoingContext(ctx, "X-Stanza-Key", apikeystr)
+
+	start := time.Now()
 	resp, err := client.GetToken(ctx, request)
+	duration := time.Since(start)
+
+	r.m.latency.Observe(float64(duration.Seconds()))
+	if duration.Milliseconds() > 300 {
+		if err != nil {
+			fmt.Printf("ERROR %+v\n", err)
+		}
+		fmt.Printf("Observing latency %+v %f\n", duration, float64(duration.Seconds()))
+		dl, _ := ctx.Deadline()
+		fmt.Printf("Now is %+v, context deadline %+v\n", time.Now(), dl)
+	}
 
 	if verbose {
 		if err != nil {
-			log.Printf("Error %v\n", err)
+			log.Printf("Error %v, duration %+v\n", err, duration)
 		} else {
-			log.Printf("Response %+v\n", r)
+			log.Printf("Response %+v, duration %+v\n", *r, duration)
 		}
 	}
 
@@ -224,4 +282,22 @@ func tagsToStr(tags []*pb.Tag) string {
 	} else {
 		return result
 	}
+}
+
+func interceptorLogger(l gokitlog.Logger) logging.Logger {
+	return logging.LoggerFunc(func(_ context.Context, lvl logging.Level, msg string, fields ...any) {
+		largs := append([]any{"msg", msg}, fields...)
+		switch lvl {
+		case logging.LevelDebug:
+			_ = level.Debug(l).Log(largs...)
+		case logging.LevelInfo:
+			_ = level.Info(l).Log(largs...)
+		case logging.LevelWarn:
+			_ = level.Warn(l).Log(largs...)
+		case logging.LevelError:
+			_ = level.Error(l).Log(largs...)
+		default:
+			panic(fmt.Sprintf("unknown level %v", lvl))
+		}
+	})
 }
