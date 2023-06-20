@@ -26,30 +26,17 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 
+	demo "github.com/StanzaSystems/stanza-api-demo/demo"
+
 	"github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp"
 	configpb "github.com/GoogleCloudPlatform/grpc-gcp-go/grpcgcp/grpc_gcp"
 	pb "github.com/StanzaSystems/stanza-api-demo/gen/go/stanza/hub/v1"
 	"github.com/gin-gonic/gin"
 )
 
-type requests struct {
-	Tags          string `json:"tags"` //format: foo=bar,baz=quux etc
-	Duration      string `json:"duration"`
-	duration_time time.Duration
-	Rate          int     `json:"rate"`
-	PriorityBoost int32   `json:"priority_boost"`
-	Weight        float32 `json:"weight"`
-	parsedTags    map[string]string
-	started       *time.Time
-	ended         *time.Time
-	APIkey        string `json:"apikey"`
-	Environment   string `json:"environment"`
-	Decorator     string `json:"decorator"`
-}
-
 type RequestRunner struct {
 	client  pb.QuotaServiceClient
-	history []*requests
+	history []*demo.Requests
 	m       *meters
 }
 
@@ -103,15 +90,15 @@ func MakeRequestRunner() *RequestRunner {
 	client := pb.NewQuotaServiceClient(conn)
 	return &RequestRunner{
 		client:  client,
-		history: make([]*requests, 0),
+		history: make([]*demo.Requests, 0),
 		m:       MakeMeters(),
 	}
 }
 
 // postRequests starts a set of requests from JSON received in the request body.
 func (r *RequestRunner) postRequest(c *gin.Context) {
-	var reqs requests
-	reqs.parsedTags = make(map[string]string)
+	var reqs demo.Requests
+	reqs.ParsedTags = make(map[string]string)
 
 	if err := c.BindJSON(&reqs); err != nil {
 		c.Writer.WriteHeader(http.StatusBadRequest)
@@ -138,7 +125,7 @@ func (r *RequestRunner) postRequest(c *gin.Context) {
 			c.Writer.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		reqs.parsedTags[st[0]] = st[1]
+		reqs.ParsedTags[st[0]] = st[1]
 	}
 
 	if reqs.Rate > 2000 {
@@ -151,9 +138,9 @@ func (r *RequestRunner) postRequest(c *gin.Context) {
 		c.Writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	reqs.duration_time = dur
+	reqs.Duration_time = dur
 
-	go r.requestQuota(&reqs)
+	go r.requestQuota(reqs)
 	c.Writer.WriteHeader(http.StatusOK)
 }
 
@@ -161,11 +148,11 @@ func (r *RequestRunner) status(c *gin.Context) {
 	c.HTML(http.StatusOK, "status.tmpl", gin.H{"Time": fmt.Sprintf("%v", time.Now())})
 }
 
-func (r *RequestRunner) requestQuota(reqs *requests) {
-	count := reqs.Rate * int(reqs.duration_time.Seconds())
-	r.history = append(r.history, &requests{})
+func (r *RequestRunner) requestQuota(reqs demo.Requests) {
+	count := reqs.Rate * int(reqs.Duration_time.Seconds())
+	r.history = append(r.history, &demo.Requests{})
 	start := time.Now()
-	reqs.started = &start
+	reqs.Started = &start
 
 	var wg sync.WaitGroup
 	limiter := rate.NewLimiter(rate.Limit(reqs.Rate), int(reqs.Rate))
@@ -176,7 +163,7 @@ func (r *RequestRunner) requestQuota(reqs *requests) {
 		}
 
 		tags := []*pb.Tag{}
-		for name, val := range reqs.parsedTags {
+		for name, val := range reqs.ParsedTags {
 			tags = append(
 				tags,
 				&pb.Tag{Key: name, Value: val},
@@ -201,7 +188,7 @@ func (r *RequestRunner) requestQuota(reqs *requests) {
 	}
 
 	end := time.Now()
-	reqs.ended = &end
+	reqs.Ended = &end
 
 	wg.Wait()
 }
