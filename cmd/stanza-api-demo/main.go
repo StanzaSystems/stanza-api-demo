@@ -11,8 +11,6 @@ import (
 
 // TODO (Laura): add a page that shows currently running requests / recent history
 // TODO (Laura): graph burst and best effort statuses
-// TODO (Laura): sort out dev throughput issue
-// TODO (Laura): add demo ALB and update default
 // TODO (Laura): add scripts/cli tool to run them
 
 var (
