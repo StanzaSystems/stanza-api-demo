@@ -31,9 +31,7 @@ const (
 )
 
 func main() {
-	// we need to fix ALB for grpc in demo before flipping over to this.
-	//flag.StringVar(&hub, "hub", "hub.demo.getstanza.io:9020", "The hub address host:port to issue queries against.")
-	flag.StringVar(&hub, "hub", "hub.dev.getstanza.dev:9020", "The hub address host:port to issue queries against.")
+	flag.StringVar(&hub, "hub", "hub.demo.getstanza.io:9020", "The hub address host:port to issue queries against.")
 	flag.BoolVar(&hub_insecure, "hub_insecure", false, "Skip Hub TLS validation (for local development only).")
 	flag.BoolVar(&verbose, "verbose", false, "Print out details on every success/failure.")
 	flag.IntVar(&port, "metrics_port", 9277, "Prom metrics server port")
