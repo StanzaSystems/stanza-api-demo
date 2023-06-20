@@ -1,10 +1,13 @@
 version: '3.8'
 services:
-  stanza-api-demo:
+  demo:
     build: .
     ports:
        - "9277:9277"   # Metrics 
        - "9278:9278"   # Status and REST endpoint
+  cli:
+    build: 
+      dockerfile: ./Dockerfile_cli
   prometheus:
      image: prom/prometheus:latest
      container_name: stanza-api-prometheus

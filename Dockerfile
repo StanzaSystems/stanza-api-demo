@@ -1,5 +1,5 @@
 # Build Stage
-FROM golang:1.20 AS build
+FROM golang:1.20-bullseye AS build
 
 LABEL app="stanza-api-demo"
 LABEL REPO="https://github.com/StanzaSystems/stanza-api-demo"
