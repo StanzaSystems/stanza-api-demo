@@ -9,10 +9,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// TODO (Laura): add a page that shows currently running requests / recent history
-// TODO (Laura): graph burst and best effort statuses
-// TODO (Laura): add scripts/cli tool to run them
-
 var (
 	hub          string
 	hub_insecure bool
@@ -21,7 +17,6 @@ var (
 	rest_port    int
 )
 
-// defaults, may be overridden by requests
 const (
 	decoratorName  = "Expensive Limited Resource"
 	env            = "tiered_quota"
@@ -33,7 +28,7 @@ func main() {
 	flag.BoolVar(&hub_insecure, "hub_insecure", false, "Skip Hub TLS validation (for local development only).")
 	flag.BoolVar(&verbose, "verbose", false, "Print out details on every success/failure.")
 	flag.IntVar(&port, "metrics_port", 9277, "Prom metrics server port")
-	flag.IntVar(&rest_port, "rest_port", 9278, "REST API and status page")
+	flag.IntVar(&rest_port, "rest_port", 9278, "REST API")
 
 	flag.Parse()
 
@@ -44,7 +39,5 @@ func main() {
 
 	router := gin.Default()
 	router.POST("/run", runner.postRequest)
-	router.LoadHTMLFiles("./cmd/stanza-api-demo/assets/status.tmpl")
-	router.GET("/status", runner.status)
 	router.Run(fmt.Sprintf(":%d", rest_port))
 }
