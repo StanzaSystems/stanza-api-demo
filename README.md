@@ -136,7 +136,7 @@ There are three customer tiers here: free, paid, and enterprise. They are specif
 any set of tags that works for your application.
 
 ### Free Tier and Weights
-The free tier gets a total of 10 qps, shared between all customers in that tier. In fact, we don't use customer_id in this tier to achieve fairness.
+The free tier gets a total of 10 qps, shared between all customers in that tier. In fact, we don't use `customer_id` in this tier to achieve fairness (just to demonstrate the flexibility of what is possible).
 
 Run this sequence of requests: 
 ```
