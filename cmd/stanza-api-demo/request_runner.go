@@ -72,7 +72,6 @@ func MakeRequestRunner() *RequestRunner {
 			// Order matters e.g. tracing interceptor have to create span first for the later exemplars to work.
 			grpcgcp.GCPUnaryClientInterceptor,
 			grpc_prometheus.UnaryClientInterceptor,
-			//logging.UnaryClientInterceptor(interceptorLogger(rpcLogger), logging.WithFieldsFromContext(logTraceID)),
 		),
 	)
 
@@ -137,10 +136,6 @@ func (r *RequestRunner) postRequest(c *gin.Context) {
 	c.Writer.WriteHeader(http.StatusOK)
 }
 
-func (r *RequestRunner) status(c *gin.Context) {
-	c.HTML(http.StatusOK, "status.tmpl", gin.H{"Time": fmt.Sprintf("%v", time.Now())})
-}
-
 func (r *RequestRunner) requestQuota(reqs demo.Requests) {
 	count := reqs.Rate * int(reqs.Duration_time.Seconds())
 	r.history = append(r.history, &demo.Requests{})
@@ -192,7 +187,6 @@ func (r *RequestRunner) doReq(client pb.QuotaServiceClient, request *pb.GetToken
 
 	labels := make(map[string]string)
 	labels["priorityBoost"] = fmt.Sprintf("%d", *request.PriorityBoost)
-	labels["environment"] = request.S.Environment
 	labels["tags"] = tagsToStr(request.S.GetTags())
 
 	ctx = metadata.AppendToOutgoingContext(ctx, "X-Stanza-Key", apikeystr)
