@@ -185,7 +185,10 @@ The specifically-defined customers do not have `bestEffortBurst` enabled (just f
 
 In this scenario you will see that the enterprise customer `a-larger-customer` is strictly limited to 150 qps while
 `default-ent-customer` is allowed to burst to 200 qps because the enterprise tier has spare capacity.
-[NB need to verify this after restarting demo hub TODO remove this]
+
+
+** [NB need to verify this after restarting demo hub TODO remove this] **
+
 
 Run these commands: 
 ```
