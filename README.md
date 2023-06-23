@@ -43,7 +43,7 @@ It will take a few seconds for metrics to be scraped and displayed.
 Stanza performs dynamic prioritisation of requests. Stanza has 11 request priority levels. 0 is the highest priority and 10 is the lowest.
 By default, requests have priority `5`. We can boost or reduce priority of each request. 
 
-You can see priority boosting in action by running two overlapping sets of requests right after the other, as follows:
+You can see priority boosting in action by running two overlapping sets of requests, as follows:
 ```
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --tags=tier=paid,customer_id=paid-customer-1
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=100 --tags=tier=paid,customer_id=paid-customer-1 --priority_boost=5
@@ -135,14 +135,29 @@ In this demo, we have set up a Decorator with the following configuration:
 There are three customer tiers here: free, paid, and enterprise. They are specified as tags (labels) which are flexible - you can define
 any set of tags that works for your application.
 
-### Free Tier
-The free tier gets a total of 10 qps, shared between all customers in that tier. 
+### Free Tier and Weights
+The free tier gets a total of 10 qps, shared between all customers in that tier. In fact, we don't use customer_id in this tier to achieve fairness.
 
 Run this sequence of requests: 
 ```
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=100 --tags=tier=free
 ```
 You'll see that the requests granted tops out at 10 qps.
+
+Requests can have varying weights. Try
+```
+docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=100 --tags=tier=free --weight=5
+```
+
+This will grant only 2 qps because each request has weight 5.
+
+```
+docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=100 --tags=tier=free --weight=0.5
+```
+
+This will grant 10 qps because each request has weight 0.5.
+When using weights with Stanza your application can estimate upfront and then update when the request has completed and the full cost is known.
+
 
 ### Paid Tier and Best Effort Burst
 
@@ -179,6 +194,10 @@ docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --t
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=200 --tags=tier=enterprise,customer_id=a-larger-customer
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=200 --tags=tier=enterprise,customer_id=default-ent-customer
 ```
+
+### Try your own scenarios
+
+You can use the `docker exec stanza-api-demo-cli-1  /stanza-api-cli` tool to run any set of requests you choose against the Stanza demo. 
 
 ## Using your own custom Stanza API Key and Config
 Currently the demo is set up to use a pre-loaded API key and decorator configuration, but
