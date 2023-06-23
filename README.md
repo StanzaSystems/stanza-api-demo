@@ -18,7 +18,7 @@ This will run several containers, including:
 
 Find the Grafana container at [http://localhost:3000](http://localhost:3000). Here you can see graphs showing the Stanza API's behaviour - how many requests are granted, denied, errors, and latency. Initially there will be no data there.
 
-You can run sequences of commands against the Stanza API using the CLI provided.
+You can run sequences of commands against the Stanza API using the CLI provided (examples below).
 `docker exec stanza-api-demo-cli-1  /stanza-api-cli`
 
 ## Decorators and Rate Limits in Action
@@ -28,37 +28,31 @@ You can configure Stanza Decorators with a rate and a burst.
 The rate is the number of requests that the Decorator can serve steady state. Burst, if higher than the rate, allows temporary periods of higher usage,
 but the average number of requests cannot exceed the steady state rate.  
 
-Observe this by running the Stanza API demo with the following parameters:
-TODO fix
-  * "duration": "30s",
-  * "rate": 150,
-  * "tags": "tier=paid,customer_id=paid-customer-1"
+Observe this by running the Stanza API demo as follows:
+```
+docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=150 --tags=tier=paid,customer_id=paid-customer-1
+```
 
-Our demo quota sets a rate limit of 100 requests per second for each customer in the `paid` tier.
+Our demo quota sets a rate limit of 100 requests per second for each customer in the `paid` tier. We are requesting above that rate (150 qps).
 In [Grafana](http://localhost:3000/d/W23Z3R_Vk/stanza-api-demo?orgId=1) you will see the rate of granted requests
 rise to around 100 per second, while the rate not granted rises to 50 per second. This sequence of requests will run for 30 seconds. 
+It will take a few seconds for metrics to be scraped and displayed.
 
 ## Request Prioritization
 
 Stanza performs dynamic prioritisation of requests. Stanza has 11 request priority levels. 0 is the highest priority and 10 is the lowest.
 By default, requests have priority `5`. We can boost or reduce priority of each request. 
 
-You can see priority boosting in action by running two overlapping sets of requests.
-todo fix to cli
-First set of requests:
-  * "duration": "60s",
-  * "rate": 100,
-  * "tags": "tier=paid,customer_id=paid-customer-1"
-
-Second set:s
-  * "duration": "60s",
-  * "rate": 100,
-  *  "tags": "tier=paid,customer_id=paid-customer-1",
-  *  "priority_boost": 5
+You can see priority boosting in action by running two overlapping sets of requests right after the other, as follows:
+```
+docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --tags=tier=paid,customer_id=paid-customer-1
+docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=100 --tags=tier=paid,customer_id=paid-customer-1 --priority_boost=5
+```
 
 These should show up as two separate graph lines in [Grafana](http://localhost:3000/d/W23Z3R_Vk/stanza-api-demo?orgId=1).
-You will see that most of the boosted requests are granted, after a very short initial period where Stanza adjusts to the new request pattern. 
+You will see that most of the boosted requests are granted.
 Because available quota is 100 requests per second, and this is consumed by the boosted requests, the non-boosted requests are not granted.
+After 30 seconds, the boosted requests stop and the default-priority requests will be granted - you should see the lines cross on the graph.
 
 ### Child Quotas
 
@@ -67,65 +61,128 @@ We can't do this through request prioritisation alone.
 
 In this demo, we have set up a Decorator with the following configuration:
 
+```
+{
+  "enabled": true,
+  "tagConfig": {
+    "tagName": "tier"
+  },
+  "childQuotaConfigs": {
+    "tier=enterprise": {
+      "rateLimitConfig": {
+        "rate": 1500,
+        "burst": 1500
+      },
+      "tagConfig": {
+        "tagName": "customer_id",
+        "tagOptional": true
+      },
+      "childQuotaConfigs": {
+        "customer_id=a-large-customer": {
+          "rateLimitConfig": {
+            "rate": 50,
+            "burst": 80
+          }
+        },
+        "customer_id=a-larger-customer": {
+          "rateLimitConfig": {
+            "rate": 150,
+            "burst": 200
+          }
+        },
+        "customer_id=a-small-customer": {
+          "rateLimitConfig": {
+            "rate": 20,
+            "burst": 50
+          }
+        }
+      },
+      "childDefaultConfigs": {
+        "customer_id": {
+          "rate": 20,
+          "burst": 40,
+          "bestEffortBurst": true
+        }
+      }
+    },
+    "tier=free": {
+      "rateLimitConfig": {
+        "rate": 10,
+        "burst": 10
+      }
+    },
+    "tier=paid": {
+      "rateLimitConfig": {
+        "rate": 100,
+        "burst": 100
+      },
+      "tagConfig": {
+        "tagName": "customer_id"
+      },
+      "childDefaultConfigs": {
+        "customer_id": {
+          "rate": 10,
+          "burst": 20,
+          "bestEffortBurst": true
+        }
+      }
+    }
+  }
+}
+```
 
 
-config := ipb.QuotaConfig{
-		Enabled: proto.Bool(true),
-		TagConfig: &ipb.TagConfig{
-			TagName:     "tier",
-			TagOptional: false,
-		},
-		ChildQuotaConfigs: map[string]*ipb.QuotaConfig{
-			"tier=free": {
-				RateLimitConfig: &ipb.RateLimitConfig{
-					Rate:  proto.Uint32(10),
-					Burst: proto.Uint32(10),
-				},
-			},
-			"tier=paid": {
-				RateLimitConfig: &ipb.RateLimitConfig{
-					Rate:  proto.Uint32(100),
-					Burst: proto.Uint32(100),
-				},
-				TagConfig: &ipb.TagConfig{TagName: "customer_id"},
-				ChildDefaultConfigs: map[string]*ipb.RateLimitConfig{
-					"customer_id": {
-						Rate:            proto.Uint32(10),
-						Burst:           proto.Uint32(20),
-						BestEffortBurst: true,
-					},
-				},
-			},
-			"tier=enterprise": {
-				RateLimitConfig: &ipb.RateLimitConfig{
-					Rate:  proto.Uint32(1500),
-					Burst: proto.Uint32(1500),
-				},
-				ChildQuotaConfigs: map[string]*ipb.QuotaConfig{
-					"customer_id=a-small-customer":  {RateLimitConfig: &ipb.RateLimitConfig{Rate: proto.Uint32(20), Burst: proto.Uint32(50)}},
-					"customer_id=a-large-customer":  {RateLimitConfig: &ipb.RateLimitConfig{Rate: proto.Uint32(50), Burst: proto.Uint32(80)}},
-					"customer_id=a-larger-customer": {RateLimitConfig: &ipb.RateLimitConfig{Rate: proto.Uint32(150), Burst: proto.Uint32(200)}},
-				},
-				TagConfig: &ipb.TagConfig{TagName: "customer_id", TagOptional: true},
-				ChildDefaultConfigs: map[string]*ipb.RateLimitConfig{
-					"customer_id": {
-						Rate:            proto.Uint32(20),
-						Burst:           proto.Uint32(40),
-						BestEffortBurst: true,
-					},
-				},
-			},
-		},
-	}
+There are three customer tiers here: free, paid, and enterprise. They are specified as tags (labels) which are flexible - you can define
+any set of tags that works for your application.
 
- 
- TODO arguments
+### Free Tier
+The free tier gets a total of 10 qps, shared between all customers in that tier. 
 
-The Stanza runner status page is at http://localhost:9278/status. Here you can see a record of previous and currently running sets of requests.
+Run this sequence of requests: 
+```
+docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=100 --tags=tier=free
+```
+You'll see that the requests granted tops out at 10 qps.
+
+### Paid Tier and Best Effort Burst
+
+The paid tier gets a total of 100 qps, and each customer within that tier gets a steady-state rate of 10qps and can occasionally burst to 20qps (if they average 10qps or lower).
+We don't specify limits for each customer - we only specify one default configuration for the tier, so every customer gets the same rate limit.
+
+If the entire paid tier is oversubscribed, customers may not get 10 qps each, but Stanza will allocate as fairly as possible.
+Customers in the paid tier are allowed to `bestEffortBurst`. This means that they will get more than 10 qps allocated, as long as there is available capacity at the paid tier level.
+
+Run these commands: 
+```
+docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --tags=tier=free
+docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --tags=tier=paid,customer_id=paid-customer-1
+docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --tags=tier=paid,customer_id=paid-customer-2
+docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --tags=tier=paid,customer_id=paid-customer-3
+```
+
+This runs requests against both the free tier and the paid tier. You should see a 110 qps being granted - 10 for the free tier and 100 for the paid tier, split between the 3 customers.
+
+### Enterprise Tier and Varying Per-customer limits
+
+The enterprise tier as a whole has a limit of 1500 qps.
+Several customers have specifically defined rate limits, and there is a default configuration which is used for any customer_ids that do not have a specified limit.
+The specifically-defined customers do not have `bestEffortBurst` enabled (just for demonstration purposes), so they must stick to their assigned rate limits.
+
+In this scenario you will see that the enterprise customer `a-larger-customer` is strictly limited to 150 qps while
+`default-ent-customer` is allowed to burst to 200 qps because the enterprise tier has spare capacity.
+[NB need to verify this after restarting demo hub TODO remove this]
+
+Run these commands: 
+```
+docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --tags=tier=free
+docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --tags=tier=paid,customer_id=paid-customer-1
+docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=200 --tags=tier=enterprise,customer_id=a-larger-customer
+docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=200 --tags=tier=enterprise,customer_id=default-ent-customer
+```
 
 ## Using your own custom Stanza API Key and Config
 Currently the demo is set up to use a pre-loaded API key and decorator configuration, but
-soon you will be able to set up your own API key and experiment with your own decorator confgurations.
+soon you will be able to set up your own API key and experiment with your own decorator configurations.
 
 ## Performance and Load
 Stanza is currently in eval/alpha and our API demo is hosted only in one region (us-east-2). 

@@ -89,13 +89,14 @@ func MakeRequestRunner() *RequestRunner {
 
 // postRequests starts a set of requests from JSON received in the request body.
 func (r *RequestRunner) postRequest(c *gin.Context) {
-	var reqs demo.Requests
-	reqs.ParsedTags = make(map[string]string)
+	reqs := demo.Requests{}
 
 	if err := c.BindJSON(&reqs); err != nil {
 		c.Writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	reqs.ParsedTags = make(map[string]string)
 
 	if reqs.APIkey == "" {
 		reqs.APIkey = apikey_default

@@ -115,6 +115,18 @@
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(stanza_demo_quota_granted_total[10s]))",
+          "hide": false,
+          "instant": false,
+          "range": true,
+          "refId": "B"
         }
       ],
       "title": "Quota Granted",
@@ -207,6 +219,18 @@
           "instant": false,
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(stanza_demo_quota_not_granted_total[10s]))",
+          "hide": false,
+          "instant": false,
+          "range": true,
+          "refId": "B"
         }
       ],
       "title": "Quota Not Granted",
@@ -417,13 +441,13 @@
     "list": []
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Stanza API Demo",
   "uid": "W23Z3R_Vk",
-  "version": 4,
+  "version": 6,
   "weekStart": ""
 }
