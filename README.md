@@ -14,7 +14,7 @@ In the root of the repo run `docker build` and then `docker-compose up -d`.
 This will run several containers, including:
  * A CLI
  * A server which runs requests against Stanza's demo service and exports metrics
- * Grafana, for displaying graphs of 
+ * Grafana, for displaying graphs of what the demo is observing
 
 Find the Grafana container at [http://localhost:3000](http://localhost:3000). Here you can see graphs showing the Stanza API's behaviour - how many requests are granted, denied, errors, and latency. Initially there will be no data there.
 
