@@ -7,7 +7,7 @@ import (
 )
 
 // create requests object based on flags/input
-// send to
+// send to demo:9278/run
 func main() {
 	flag.Parse()
 	fmt.Printf("ohai")
