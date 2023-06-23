@@ -24,7 +24,7 @@ type meters struct {
 func MakeMeters() *meters {
 	res := meters{}
 
-	labels := []string{"priorityBoost", "decorator", "environment", "apikey", "tags"}
+	labels := []string{"priorityBoost", "environment", "tags"}
 
 	res.quota_granted = promauto.NewCounterVec(
 		prometheus.CounterOpts{

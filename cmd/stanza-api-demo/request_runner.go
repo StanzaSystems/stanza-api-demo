@@ -59,14 +59,6 @@ func MakeRequestRunner() *RequestRunner {
 	}
 	jsonCfg := string(c)
 
-	/*logger := gokitlog.NewLogfmtLogger(os.Stderr)
-	rpcLogger := gokitlog.With(logger, "service", "gRPC/client", "component", "stanza-api-demo")
-	logTraceID := func(ctx context.Context) logging.Fields {
-		dl, _ := ctx.Deadline()
-		left := time.Until(dl)
-		return logging.Fields{"deadline_remaining", left.String()}
-	}*/
-
 	conn, err := grpc.Dial(hub,
 		grpc.WithTransportCredentials(creds),
 		grpc.WithDefaultServiceConfig(
@@ -199,9 +191,7 @@ func (r *RequestRunner) doReq(client pb.QuotaServiceClient, request *pb.GetToken
 
 	labels := make(map[string]string)
 	labels["priorityBoost"] = fmt.Sprintf("%d", *request.PriorityBoost)
-	labels["decorator"] = request.S.DecoratorName
 	labels["environment"] = request.S.Environment
-	labels["apikey"] = apikeystr
 	labels["tags"] = tagsToStr(request.S.GetTags())
 
 	ctx = metadata.AppendToOutgoingContext(ctx, "X-Stanza-Key", apikeystr)
@@ -215,16 +205,13 @@ func (r *RequestRunner) doReq(client pb.QuotaServiceClient, request *pb.GetToken
 		if err != nil {
 			fmt.Printf("ERROR %+v\n", err)
 		}
-		fmt.Printf("Observing latency %+v %f\n", duration, float64(duration.Seconds()))
-		dl, _ := ctx.Deadline()
-		fmt.Printf("Now is %+v, context deadline %+v\n", time.Now(), dl)
 	}
 
 	if verbose {
 		if err != nil {
 			log.Printf("Error %v, duration %+v\n", err, duration)
 		} else {
-			log.Printf("Response %+v, duration %+v\n", *r, duration)
+			log.Printf("Response %+v, duration %+v\n", resp, duration)
 		}
 	}
 
@@ -239,14 +226,10 @@ func (r *RequestRunner) doReq(client pb.QuotaServiceClient, request *pb.GetToken
 		return
 	}
 
-	if e.Code() == codes.ResourceExhausted {
-		r.m.GetQuotaNotGrantedCounter().With(labels).Inc()
-		return
-	}
-
-	// no error, granted
 	if resp.Granted {
 		r.m.GetQuotaGrantedCounter().With(labels).Inc()
+	} else {
+		r.m.GetQuotaNotGrantedCounter().With(labels).Inc()
 	}
 }
 

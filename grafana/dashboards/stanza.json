@@ -110,8 +110,8 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "editorMode": "builder",
-          "expr": "rate(stanza_demo_quota_granted_total[1m])",
+          "editorMode": "code",
+          "expr": "rate(stanza_demo_quota_granted_total[10s])",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -196,6 +196,19 @@
           "sort": "none"
         }
       },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "rate(stanza_demo_quota_not_granted_total[10s])",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
       "title": "Quota Not Granted",
       "type": "timeseries"
     },
@@ -385,8 +398,8 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "editorMode": "builder",
-          "expr": "rate(stanza_demo_quota_error_total[1m])",
+          "editorMode": "code",
+          "expr": "rate(stanza_demo_quota_error_total[10s])",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -397,14 +410,14 @@
     }
   ],
   "refresh": "5s",
-  "schemaVersion": 37,
+  "schemaVersion": 38,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {},
