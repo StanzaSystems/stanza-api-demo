@@ -20,10 +20,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	gokitlog "github.com/go-kit/log"
-	"github.com/go-kit/log/level"
-
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 
 	demo "github.com/StanzaSystems/stanza-api-demo/demo"
@@ -35,9 +31,8 @@ import (
 )
 
 type RequestRunner struct {
-	client  pb.QuotaServiceClient
-	history []*demo.Requests
-	m       *meters
+	client pb.QuotaServiceClient
+	m      *meters
 }
 
 func MakeRequestRunner() *RequestRunner {
@@ -80,9 +75,8 @@ func MakeRequestRunner() *RequestRunner {
 	}
 	client := pb.NewQuotaServiceClient(conn)
 	return &RequestRunner{
-		client:  client,
-		history: make([]*demo.Requests, 0),
-		m:       MakeMeters(),
+		client: client,
+		m:      MakeMeters(),
 	}
 }
 
@@ -138,7 +132,6 @@ func (r *RequestRunner) postRequest(c *gin.Context) {
 
 func (r *RequestRunner) requestQuota(reqs demo.Requests) {
 	count := reqs.Rate * int(reqs.Duration_time.Seconds())
-	r.history = append(r.history, &demo.Requests{})
 	start := time.Now()
 	reqs.Started = &start
 
@@ -168,8 +161,8 @@ func (r *RequestRunner) requestQuota(reqs demo.Requests) {
 			PriorityBoost: &reqs.PriorityBoost,
 		}
 
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			defer wg.Done()
 			go r.doReq(r.client, &req, reqs.APIkey)
 		}()
@@ -242,27 +235,5 @@ func tagsToStr(tags []*pb.Tag) string {
 		result = result + k + "=" + m[k] + ","
 	}
 
-	if len(result) > 0 {
-		return result[0 : len(result)-1]
-	} else {
-		return result
-	}
-}
-
-func interceptorLogger(l gokitlog.Logger) logging.Logger {
-	return logging.LoggerFunc(func(_ context.Context, lvl logging.Level, msg string, fields ...any) {
-		largs := append([]any{"msg", msg}, fields...)
-		switch lvl {
-		case logging.LevelDebug:
-			_ = level.Debug(l).Log(largs...)
-		case logging.LevelInfo:
-			_ = level.Info(l).Log(largs...)
-		case logging.LevelWarn:
-			_ = level.Warn(l).Log(largs...)
-		case logging.LevelError:
-			_ = level.Error(l).Log(largs...)
-		default:
-			panic(fmt.Sprintf("unknown level %v", lvl))
-		}
-	})
+	return result[0 : len(result)-1]
 }
