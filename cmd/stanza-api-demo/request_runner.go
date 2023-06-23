@@ -31,9 +31,8 @@ import (
 )
 
 type RequestRunner struct {
-	client  pb.QuotaServiceClient
-	history []*demo.Requests
-	m       *meters
+	client pb.QuotaServiceClient
+	m      *meters
 }
 
 func MakeRequestRunner() *RequestRunner {
@@ -76,9 +75,8 @@ func MakeRequestRunner() *RequestRunner {
 	}
 	client := pb.NewQuotaServiceClient(conn)
 	return &RequestRunner{
-		client:  client,
-		history: make([]*demo.Requests, 0),
-		m:       MakeMeters(),
+		client: client,
+		m:      MakeMeters(),
 	}
 }
 
@@ -134,7 +132,6 @@ func (r *RequestRunner) postRequest(c *gin.Context) {
 
 func (r *RequestRunner) requestQuota(reqs demo.Requests) {
 	count := reqs.Rate * int(reqs.Duration_time.Seconds())
-	r.history = append(r.history, &demo.Requests{})
 	start := time.Now()
 	reqs.Started = &start
 
@@ -238,9 +235,5 @@ func tagsToStr(tags []*pb.Tag) string {
 		result = result + k + "=" + m[k] + ","
 	}
 
-	if len(result) > 0 {
-		return result[0 : len(result)-1]
-	} else {
-		return result
-	}
+	return result[0 : len(result)-1]
 }
