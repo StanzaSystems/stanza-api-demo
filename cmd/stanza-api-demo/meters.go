@@ -12,6 +12,8 @@ const (
 	quota_not_granted_help = "The total number of quota tokens not granted"
 	quota_error_name       = "stanza_demo_quota_error_total"
 	quota_error_help       = "The total number of errors observed when requesting quota"
+	latency_name           = "stanza_demo_quota_latency"
+	latency_help           = "Latency distribution for requests to Stanza Hub"
 )
 
 type meters struct {
@@ -49,8 +51,8 @@ func MakeMeters() *meters {
 
 	res.latency = promauto.NewHistogram(
 		prometheus.HistogramOpts{
-			Name: "stanza_demo_quota_latency",
-			Help: "Latency distribution for requests to Stanza Hub",
+			Name: latency_name,
+			Help: latency_help,
 		},
 	)
 	return &res
