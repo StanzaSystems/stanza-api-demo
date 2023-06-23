@@ -16,7 +16,7 @@ This will run several containers, including:
  * A server which runs requests against Stanza's demo service and exports metrics
  * Grafana, for displaying graphs of what the demo is observing
 
-Find the Grafana container at [http://localhost:3000](http://localhost:3000). Here you can see graphs showing the Stanza API's behaviour - how many requests are granted, denied, errors, and latency. Initially there will be no data there.
+Find the Grafana container at [http://localhost:3000](http://localhost:3000). Here you can see graphs showing the Stanza API's behaviour - how many requests are granted, denied, errors, and latency. Initially there will be no data there (until we run some requests).
 
 You can run sequences of commands against the Stanza API using the CLI provided (examples below).
 `docker exec stanza-api-demo-cli-1  /stanza-api-cli`
@@ -36,7 +36,7 @@ docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=150 --t
 Our demo quota sets a rate limit of 100 requests per second for each customer in the `paid` tier. We are requesting above that rate (150 qps).
 In [Grafana](http://localhost:3000/d/W23Z3R_Vk/stanza-api-demo?orgId=1) you will see the rate of granted requests
 rise to around 100 per second, while the rate not granted rises to 50 per second. This sequence of requests will run for 30 seconds. 
-It will take a few seconds for metrics to be scraped and displayed.
+It will take a few seconds for metrics to be scraped and displayed. 
 
 ## Request Prioritization
 
@@ -50,6 +50,7 @@ docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=100 --t
 ```
 
 These should show up as two separate graph lines in [Grafana](http://localhost:3000/d/W23Z3R_Vk/stanza-api-demo?orgId=1).
+You'll also see a separate line for the sum of all granted requests.
 You will see that most of the boosted requests are granted.
 Because available quota is 100 requests per second, and this is consumed by the boosted requests, the non-boosted requests are not granted.
 After 30 seconds, the boosted requests stop and the default-priority requests will be granted - you should see the lines cross on the graph.
