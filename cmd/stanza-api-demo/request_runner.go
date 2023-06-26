@@ -91,6 +91,11 @@ func (r *RequestRunner) postRequest(c *gin.Context) {
 
 	reqs.ParsedTags = make(map[string]string)
 
+	if reqs.Rate == 0 || reqs.Duration == "" {
+		c.Writer.WriteHeader(http.StatusOK)
+		return
+	}
+
 	if reqs.APIkey == "" {
 		reqs.APIkey = apikey_default
 	}
@@ -235,5 +240,9 @@ func tagsToStr(tags []*pb.Tag) string {
 		result = result + k + "=" + m[k] + ","
 	}
 
-	return result[0 : len(result)-1]
+	if len(result) == 0 {
+		return ""
+	} else {
+		return result[0 : len(result)-1]
+	}
 }

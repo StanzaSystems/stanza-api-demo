@@ -32,7 +32,9 @@ You will then need to access Grafana on whichever port you have specified, rathe
 
 ### Grafana and CLI 
 
-Find the Grafana container at [http://localhost:3000](http://localhost:3000). Here you can see graphs showing the Stanza API's behaviour - how many requests are granted, denied, errors, and latency. Initially there will be no data there (until we run some requests).
+Find the Grafana container at [http://localhost:3000](http://localhost:3000). 
+You will find a dashboard called `Stanza API Demo` listed under the `Dashboards` panel.
+Here you can see graphs showing the Stanza API's behaviour - how many requests are granted, denied, errors, and latency. Initially there will be no data there (until we run some requests).
 
 You can run sequences of commands against the Stanza API using the CLI provided (examples below).
 `docker exec stanza-api-demo-cli-1  /stanza-api-cli`
