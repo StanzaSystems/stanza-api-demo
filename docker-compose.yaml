@@ -2,9 +2,6 @@ version: '3.8'
 services:
   demo:
     build: .
-    ports:
-       - "9277:9277"   # Metrics 
-       - "9278:9278"   # Status and REST endpoint
   cli:
     build: 
       dockerfile: ./Dockerfile_cli
@@ -17,8 +14,6 @@ services:
        - ./prometheus-config:/prometheus-config/
        - prometheus-data:/prometheus/
      command: --web.enable-remote-write-receiver --web.enable-lifecycle  --config.file=/prometheus-config/prometheus.yaml
-     ports:
-       - "9790:9090"   # Main Prom port
   grafana:
     build: ./grafana
     ports:
