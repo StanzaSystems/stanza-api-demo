@@ -16,6 +16,22 @@ This will run several containers, including:
  * A server which runs requests against Stanza's demo service and exports metrics
  * Grafana, for displaying graphs of what the demo is observing
 
+### Ports
+
+ The demo will attempt to map Grafana's endpoint to port 3000 on your machine. If port 3000 is in use, 
+ you can edit the `docker-compose.yaml` file at the root of this repo and change that to another port.
+ For example, to use port `3001` make the following change:
+
+  grafana:
+    build: ./grafana
+    ports:
+      - '3001:3000'
+```
+
+You will then need to access Grafana on whichever port you have specified, rather than 3000 as used in the examples below.
+
+### Grafana and CLI 
+
 Find the Grafana container at [http://localhost:3000](http://localhost:3000). Here you can see graphs showing the Stanza API's behaviour - how many requests are granted, denied, errors, and latency. Initially there will be no data there (until we run some requests).
 
 You can run sequences of commands against the Stanza API using the CLI provided (examples below).
