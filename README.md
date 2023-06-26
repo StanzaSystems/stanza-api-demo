@@ -22,6 +22,7 @@ This will run several containers, including:
  you can edit the `docker-compose.yaml` file at the root of this repo and change that to another port.
  For example, to use port `3001` make the following change:
 
+```
   grafana:
     build: ./grafana
     ports:
