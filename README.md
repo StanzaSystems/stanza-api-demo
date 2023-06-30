@@ -37,8 +37,7 @@ You will then need to access Grafana on whichever port you have specified, rathe
 
 ### Grafana and CLI 
 
-Find the Grafana container at [http://localhost:3000](http://localhost:3000). 
-You will find a dashboard called `Stanza API Demo` listed under the `Dashboards` panel.
+Find the Stanza dashboar in the Grafana container at [[http://localhost:3000](http://localhost:3000/d/stanza/stanza-api-demo)](http://localhost:3000/d/stanza/stanza-api-demo?orgId=1&refresh=5s). 
 Here you can see graphs showing the Stanza API's behaviour - how many requests are granted, denied, errors, and latency. Initially there will be no data there (until we run some requests).
 
 You can run sequences of commands against the Stanza API using the CLI provided (examples below).
@@ -57,7 +56,7 @@ docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=150 --t
 ```
 
 Our demo quota sets a rate limit of 100 requests per second for each customer in the `paid` tier. We are requesting above that rate (150 qps).
-In [Grafana](http://localhost:3000/d/W23Z3R_Vk/stanza-api-demo?orgId=1) you will see the rate of granted requests
+In [Grafana](http://localhost:3000/d/stanza/stanza-api-demo?orgId=1&refresh=5s) you will see the rate of granted requests
 rise to around 100 per second, while the rate not granted rises to 50 per second. This sequence of requests will run for 30 seconds. 
 It will take a few seconds for metrics to be scraped and displayed. 
 
@@ -72,7 +71,7 @@ docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --t
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=100 --tags=tier=paid,customer_id=paid-customer-1 --priority_boost=5
 ```
 
-These should show up as two separate graph lines in [Grafana](http://localhost:3000/d/W23Z3R_Vk/stanza-api-demo?orgId=1).
+These should show up as two separate graph lines in [Grafana](http://localhost:3000/d/stanza/stanza-api-demo?orgId=1&refresh=5s).
 You'll also see a separate line for the sum of all granted requests.
 You will see that most of the boosted requests are granted.
 Because available quota is 100 requests per second, and this is consumed by the boosted requests, the non-boosted requests are not granted.
