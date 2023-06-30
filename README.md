@@ -10,7 +10,7 @@ This repo provides a demo of some of the capabilities of Stanza's APIs that are 
 Clone this repository to a machine that has `docker` and `docker-compose` installed.
 
 In the root of the repo run:
- * `docker build`
+ * `docker-compose build`
  * `docker-compose up -d`
 
 You will need to have Docker running, and you may need `sudo` for these commands.
