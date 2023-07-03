@@ -228,4 +228,12 @@ soon you will be able to set up your own API key and experiment with your own de
 ## Performance and Load
 Stanza is currently in eval/alpha and our API demo is hosted only in one region (us-east-2). 
 When fully launched we will run in several regions globally to reduce latency, but for now, you will experience some latency if you are not located near us-east-2. 
-If located at a significant distance from us-east-2 you may see some queueing and occasional timeouts in the client if you send (multiple hundreds per second). This is mainly due to queuing at the client. This won't be an issue when we're out of eval mode.
+If located at a significant distance from us-east-2 you may see some queueing and occasional timeouts in the client if you send (multiple hundreds per second). This is mainly due to queuing at the client. This shouldn't be an issue when out of eval.
+
+## Stopping
+
+To stop the demo and down the relevant containers, run:
+
+```
+docker-compose down
+```
