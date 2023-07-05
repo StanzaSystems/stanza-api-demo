@@ -1,10 +1,7 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/go
+// For format details, see https://aka.ms/devcontainer.json.
 {
-	"name": "Stanza API Demo",
-	"dockerComposeFile": "../docker-compose.yaml",
-	"service": "demo",
-	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	"build.dockerfile": "../Dockerfile",
+	"build.context": "..",
 		
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {
@@ -41,12 +38,7 @@
 	},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [3000],
-	"portsAttributes": {
-		"3000": {
-			"label": "Grafana"
-		}
-	}
+	"forwardPorts": [9277],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": ""
