@@ -1,0 +1,53 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/go
+{
+	"name": "Stanza API Demo",
+	"dockerComposeFile": "../docker-compose.yaml",
+	"service": "stanza",
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+		
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	"features": {
+		"ghcr.io/devcontainers/features/github-cli:1": {}
+	},
+	
+	// Configure tool-specific properties.
+	"customizations": {
+		"vscode": {
+			// Set *default* container specific settings.json values on container create.
+			"settings": {
+				"gopls": { "ui.semanticTokens": true },
+				"cSpell.language": "en,en-GB,en-US,lorem",
+				"cSpell.ignorePaths": [
+					"package-lock.json",
+					".devcontainer",
+					".git/objects",
+					".vscode",
+					".vscode-insiders",
+					"go.mod",
+					"go.sum",
+					"go.work",
+					"go.work.sum"
+				]
+			},
+			"extensions": [
+				"bufbuild.vscode-buf",
+				"golang.go",
+				"peterj.proto",
+				"streetsidesoftware.code-spell-checker",
+				"GitHub.vscode-pull-request-github"
+			]
+		}
+	},
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	"forwardPorts": [3000],
+	"portsAttributes": {
+		"3000": {
+			"label": "Grafana"
+		}
+	}
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": ""
+}
