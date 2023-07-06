@@ -2,7 +2,7 @@
 
 [Stanza](https://www.stanza.systems/) is a service that helps you protect your user experience during times when your services are heavily loaded.
 
-We have some frontend capabilities that can let you gracefully degrade your site in real-time in response to overload - [contact us](https://www.stanza.systems/contact) if you'd like a demo of these.
+We also have frontend capabilities that can let you gracefully degrade your site in real-time in response to overload - [contact us](https://www.stanza.systems/contact) if you'd like a demo of these.
 This repo provides a demo of some of the capabilities of Stanza's APIs that are designed to be integrated in your backend code.
 
 ## Running the Stanza Demo
@@ -16,15 +16,16 @@ In the root of the repo run:
 
 You will need to have Docker running, and you may need `sudo` for these commands.
 
-This will run several containers, including:
+This will run several containers:
 
-* A CLI
 * A server which runs requests against Stanza's demo service and exports metrics
-* Grafana, for displaying graphs of what the demo is observing
+* A CLI to allow you interact with Stanza
+* Prometheus, to collect metrics
+* Grafana, provide a dashboard of what the demo is observing
 
 ### Ports
 
- The demo will attempt to map Grafana's endpoint to port 3000 on your machine. If port 3000 is in use, 
+ The demo will attempt to map Grafana's endpoint to port 3000 on your machine. If port 3000 is in use,
  you can edit the `docker-compose.yaml` file at the root of this repo and change that to another port.
  For example, to use port `3001` make the following change:
 
@@ -39,16 +40,15 @@ You will then need to access Grafana on whichever port you have specified, rathe
 
 ### Grafana and CLI
 
-[Stanza Dashboard](http://localhost:3000/d/stanza/stanza-api-demo?orgId=1&refresh=5s)
-
-Here you can see graphs showing the Stanza API's behavior - how many requests are granted, denied, errors, and latency. Initially there will be no data there (until we run some requests).
+[Local Stanza Dashboard](http://localhost:3000/d/stanza/stanza-api-demo?orgId=1&refresh=5s): Here you can see graphs showing the Stanza API's behavior - how many requests are granted, denied, errors, and latency. Initially there will be no data there (until we run some requests).
 
 You can run sequences of commands against the Stanza API using the CLI provided (examples below).
+
 `docker exec stanza-api-demo-cli-1  /stanza-api-cli`
 
 ## Decorators and Rate Limits in Action
 
-One of Stanza's core concepts is the Decorator. Decorators are used to guard a resource that can become overloaded. 
+One of Stanza's core concepts is the Decorator. Decorators are used to guard a resource that can become overloaded.
 You can configure Stanza Decorators with a rate and a burst.
 The rate is the number of requests that the Decorator can serve steady state. Burst, if higher than the rate, allows temporary periods of higher usage,
 but the average number of requests cannot exceed the steady state rate.  
@@ -60,8 +60,8 @@ docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=150 --t
 ```
 
 Our demo quota sets a rate limit of 100 requests per second for each customer in the `paid` tier. We are requesting above that rate (150 qps).
-In [Grafana](http://localhost:3000/d/stanza/stanza-api-demo?orgId=1&refresh=5s) you will see the rate of granted requests
-rise to around 100 per second, while the rate not granted rises to 50 per second. This sequence of requests will run for 30 seconds. 
+On the [Dashboard](http://localhost:3000/d/stanza/stanza-api-demo?orgId=1&refresh=5s) you will see the rate of granted requests
+rise to around 100 per second, while the rate not granted rises to 50 per second. This sequence of requests will run for 30 seconds.
 It will take a few seconds for metrics to be scraped and displayed.
 
 ## Request Prioritization
@@ -76,7 +76,7 @@ docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --t
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=100 --tags=tier=paid,customer_id=paid-customer-1 --priority_boost=5
 ```
 
-These should show up as two separate graph lines in [Grafana](http://localhost:3000/d/stanza/stanza-api-demo?orgId=1&refresh=5s).
+These should show up as two separate graph lines on the [Dashboard](http://localhost:3000/d/stanza/stanza-api-demo?orgId=1&refresh=5s).
 You'll also see a separate line for the sum of all granted requests.
 You will see that most of the boosted requests are granted.
 Because available quota is 100 requests per second, and this is consumed by the boosted requests, the non-boosted requests are not granted.
@@ -228,7 +228,7 @@ docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=200 --t
 
 ### Try your own scenarios
 
-You can use the `docker exec stanza-api-demo-cli-1  /stanza-api-cli` tool to run any set of requests you choose against the Stanza demo. 
+You can use the `docker exec stanza-api-demo-cli-1  /stanza-api-cli` tool to run any set of requests you choose against the Stanza demo.
 
 ## Using your own custom Stanza API Key and Config
 
@@ -237,9 +237,9 @@ soon you will be able to set up your own API key and experiment with your own de
 
 ## Performance and Load
 
-Stanza is currently in eval/alpha and our API demo is hosted only in one region (us-east-2). 
-When fully launched we will run in several regions globally to reduce latency, but for now, you will experience some latency if you are not located near us-east-2. 
-If located at a significant distance from us-east-2 you may see some queueing and occasional timeouts in the client if you send (multiple hundreds per second). This is mainly due to queuing at the client. This shouldn't be an issue when out of eval.
+Stanza is currently in eval/alpha and our API demo is hosted only in one region (us-east-2).
+When fully launched we will run in several regions globally to reduce latency, but for now, you will experience some latency if you are not located near us-east-2.
+If located at a significant distance from us-east-2 you may see some queueing and occasional timeouts in the client if you send (multiple hundreds per second). This is mainly due to queuing at the client. This will not be an issue when out of our evaluation period.
 
 ## Stopping the demo
 
