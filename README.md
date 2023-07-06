@@ -2,23 +2,25 @@
 
 [Stanza](https://www.stanza.systems/) is a service that helps you protect your user experience during times when your services are heavily loaded.
 
-We have some frontend capabilities that can let you gracefully degrade your site in real-time in response to overload - [contact us](https://www.stanza.systems/contact) if you'd like a demo of these. 
-This repo provides a demo of some of the capabilities of Stanza's APIs that are designed to be integrated in your backend code. 
+We have some frontend capabilities that can let you gracefully degrade your site in real-time in response to overload - [contact us](https://www.stanza.systems/contact) if you'd like a demo of these.
+This repo provides a demo of some of the capabilities of Stanza's APIs that are designed to be integrated in your backend code.
 
 ## Running the Stanza Demo
 
 Clone this repository to a machine that has `docker` and `docker-compose` installed.
 
 In the root of the repo run:
- * `docker-compose build`
- * `docker-compose up -d`
+
+* `docker-compose build`
+* `docker-compose up -d`
 
 You will need to have Docker running, and you may need `sudo` for these commands.
 
 This will run several containers, including:
- * A CLI
- * A server which runs requests against Stanza's demo service and exports metrics
- * Grafana, for displaying graphs of what the demo is observing
+
+* A CLI
+* A server which runs requests against Stanza's demo service and exports metrics
+* Grafana, for displaying graphs of what the demo is observing
 
 ### Ports
 
@@ -26,7 +28,7 @@ This will run several containers, including:
  you can edit the `docker-compose.yaml` file at the root of this repo and change that to another port.
  For example, to use port `3001` make the following change:
 
-```
+```yaml
   grafana:
     build: ./grafana
     ports:
@@ -35,10 +37,11 @@ This will run several containers, including:
 
 You will then need to access Grafana on whichever port you have specified, rather than 3000 as used in the examples below.
 
-### Grafana and CLI 
+### Grafana and CLI
 
-Find the Stanza dashboar in the Grafana container at [[http://localhost:3000](http://localhost:3000/d/stanza/stanza-api-demo)](http://localhost:3000/d/stanza/stanza-api-demo?orgId=1&refresh=5s). 
-Here you can see graphs showing the Stanza API's behaviour - how many requests are granted, denied, errors, and latency. Initially there will be no data there (until we run some requests).
+[Stanza Dashboard](http://localhost:3000/d/stanza/stanza-api-demo?orgId=1&refresh=5s)
+
+Here you can see graphs showing the Stanza API's behavior - how many requests are granted, denied, errors, and latency. Initially there will be no data there (until we run some requests).
 
 You can run sequences of commands against the Stanza API using the CLI provided (examples below).
 `docker exec stanza-api-demo-cli-1  /stanza-api-cli`
@@ -51,22 +54,24 @@ The rate is the number of requests that the Decorator can serve steady state. Bu
 but the average number of requests cannot exceed the steady state rate.  
 
 Observe this by running the Stanza API demo as follows:
-```
+
+```shell
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=150 --tags=tier=paid,customer_id=paid-customer-1
 ```
 
 Our demo quota sets a rate limit of 100 requests per second for each customer in the `paid` tier. We are requesting above that rate (150 qps).
 In [Grafana](http://localhost:3000/d/stanza/stanza-api-demo?orgId=1&refresh=5s) you will see the rate of granted requests
 rise to around 100 per second, while the rate not granted rises to 50 per second. This sequence of requests will run for 30 seconds. 
-It will take a few seconds for metrics to be scraped and displayed. 
+It will take a few seconds for metrics to be scraped and displayed.
 
 ## Request Prioritization
 
-Stanza performs dynamic prioritisation of requests. Stanza has 11 request priority levels. 0 is the highest priority and 10 is the lowest.
-By default, requests have priority `5`. We can boost or reduce priority of each request. 
+Stanza performs dynamic prioritization of requests. Stanza has 11 request priority levels. 0 is the highest priority and 10 is the lowest.
+By default, requests have priority `5`. We can boost or reduce priority of each request.
 
 You can see priority boosting in action by running two overlapping sets of requests, as follows:
-```
+
+```shell
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --tags=tier=paid,customer_id=paid-customer-1
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=100 --tags=tier=paid,customer_id=paid-customer-1 --priority_boost=5
 ```
@@ -80,11 +85,11 @@ After 30 seconds, the boosted requests stop and the default-priority requests wi
 ### Child Quotas
 
 In many applications, we want to be able to make some guarantees about isolation and fairness between different workloads.
-We can't do this through request prioritisation alone.
+We can't do this through request prioritization alone.
 
 In this demo, we have set up a Decorator with the following configuration:
 
-```
+```yaml
 {
   "enabled": true,
   "tagConfig": {
@@ -154,33 +159,35 @@ In this demo, we have set up a Decorator with the following configuration:
 }
 ```
 
-
 There are three customer tiers here: free, paid, and enterprise. They are specified as tags (labels) which are flexible - you can define
 any set of tags that works for your application.
 
 ### Free Tier and Weights
+
 The free tier gets a total of 10 qps, shared between all customers in that tier. In fact, we don't use `customer_id` in this tier to achieve fairness (just to demonstrate the flexibility of what is possible).
 
-Run this sequence of requests: 
-```
+Run this sequence of requests:
+
+```shell
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=100 --tags=tier=free
 ```
+
 You'll see that the requests granted tops out at 10 qps.
 
 Requests can have varying weights. Try
-```
+
+```shell
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=100 --tags=tier=free --weight=5
 ```
 
 This will grant only 2 qps because each request has weight 5.
 
-```
+```shell
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=30s --rate=100 --tags=tier=free --weight=0.5
 ```
 
 This will grant 10 qps because each request has weight 0.5.
 When using weights with Stanza your application can estimate upfront and then update when the request has completed and the full cost is known.
-
 
 ### Paid Tier and Best Effort Burst
 
@@ -190,8 +197,9 @@ We don't specify limits for each customer - we only specify one default configur
 If the entire paid tier is oversubscribed, customers may not get 10 qps each, but Stanza will allocate as fairly as possible.
 Customers in the paid tier are allowed to `bestEffortBurst`. This means that they will get more than 10 qps allocated, as long as there is available capacity at the paid tier level.
 
-Run these commands: 
-```
+Run these commands:
+
+```shell
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --tags=tier=free
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --tags=tier=paid,customer_id=paid-customer-1
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --tags=tier=paid,customer_id=paid-customer-2
@@ -209,8 +217,9 @@ The specifically-defined customers do not have `bestEffortBurst` enabled (just f
 In this scenario you will see that the enterprise customer `a-larger-customer` is strictly limited to 150 qps while
 `default-ent-customer` is allowed to burst to 200 qps because the enterprise tier has spare capacity.
 
-Run these commands: 
-```
+Run these commands:
+
+```shell
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --tags=tier=free
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=100 --tags=tier=paid,customer_id=paid-customer-1
 docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=200 --tags=tier=enterprise,customer_id=a-larger-customer
@@ -222,10 +231,12 @@ docker exec stanza-api-demo-cli-1  /stanza-api-cli --duration=60s --rate=200 --t
 You can use the `docker exec stanza-api-demo-cli-1  /stanza-api-cli` tool to run any set of requests you choose against the Stanza demo. 
 
 ## Using your own custom Stanza API Key and Config
+
 Currently the demo is set up to use a pre-loaded API key and decorator configuration, but
 soon you will be able to set up your own API key and experiment with your own decorator configurations.
 
 ## Performance and Load
+
 Stanza is currently in eval/alpha and our API demo is hosted only in one region (us-east-2). 
 When fully launched we will run in several regions globally to reduce latency, but for now, you will experience some latency if you are not located near us-east-2. 
 If located at a significant distance from us-east-2 you may see some queueing and occasional timeouts in the client if you send (multiple hundreds per second). This is mainly due to queuing at the client. This shouldn't be an issue when out of eval.
@@ -234,6 +245,6 @@ If located at a significant distance from us-east-2 you may see some queueing an
 
 Stopping the demo and downing the containers is accomplished via:
 
-```
+```shell
 docker-compose down
 ```
