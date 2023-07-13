@@ -3,7 +3,7 @@
 First off, thanks for taking the time to contribute!
 
 When contributing to this repository, please first discuss the change you wish to make via issue,
-email, or any other method with the owners of this repository before making a change.
+email, or come join our [Discord](https://discord.gg/fpW5cWemXH).
 
 Please note we have a code of conduct, please follow it in all your interactions with the project.
 
@@ -11,7 +11,6 @@ Please note we have a code of conduct, please follow it in all your interactions
 
 - [Code of Conduct](#code-of-conduct)
 - [Reporting Bugs](#reporting-bugs)
-
 
 ## Code of Conduct
 
