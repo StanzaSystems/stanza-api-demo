@@ -18,7 +18,7 @@ var (
 )
 
 const (
-	decoratorName  = "Expensive Limited Resource"
+	guardName      = "Expensive Limited Resource"
 	env            = "tiered_quota"
 	apikey_default = "2dacc6dd-e1ec-4b09-ac02-ff3bfa2213df"
 )
