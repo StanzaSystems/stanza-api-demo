@@ -46,11 +46,11 @@ You can run sequences of commands against the Stanza API using the CLI provided 
 
 `docker exec stanza-api-demo-cli-1  /stanza-api-cli`
 
-## Decorators and Rate Limits in Action
+## Guards and Rate Limits in Action
 
-One of Stanza's core concepts is the Decorator. Decorators are used to guard a resource that can become overloaded.
-You can configure Stanza Decorators with a rate and a burst.
-The rate is the number of requests that the Decorator can serve steady state. Burst, if higher than the rate, allows temporary periods of higher usage,
+One of Stanza's core concepts is the Guard. Guards are used to guard a resource that can become overloaded.
+You can configure Stanza Guards with a rate and a burst.
+The rate is the number of requests that the Guard can serve steady state. Burst, if higher than the rate, allows temporary periods of higher usage,
 but the average number of requests cannot exceed the steady state rate.  
 
 Observe this by running the Stanza API demo as follows:
@@ -87,7 +87,7 @@ After 30 seconds, the boosted requests stop and the default-priority requests wi
 In many applications, we want to be able to make some guarantees about isolation and fairness between different workloads.
 We can't do this through request prioritization alone.
 
-In this demo, we have set up a Decorator with the following configuration:
+In this demo, we have set up a Guard with the following configuration:
 
 ```yaml
 {
@@ -232,8 +232,8 @@ You can use the `docker exec stanza-api-demo-cli-1  /stanza-api-cli` tool to run
 
 ## Using your own custom Stanza API Key and Config
 
-Currently the demo is set up to use a pre-loaded API key and decorator configuration, but
-soon you will be able to set up your own API key and experiment with your own decorator configurations.
+Currently the demo is set up to use a pre-loaded API key and Guard configuration, but
+soon you will be able to set up your own API key and experiment with your own Guard configurations.
 
 ## Performance and Load
 

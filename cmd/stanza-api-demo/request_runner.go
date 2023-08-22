@@ -99,8 +99,8 @@ func (r *RequestRunner) postRequest(c *gin.Context) {
 	if reqs.APIkey == "" {
 		reqs.APIkey = apikey_default
 	}
-	if reqs.Decorator == "" {
-		reqs.Decorator = decoratorName
+	if reqs.Guard == "" {
+		reqs.Guard = guardName
 	}
 	if reqs.Environment == "" {
 		reqs.Environment = env
@@ -157,10 +157,10 @@ func (r *RequestRunner) requestQuota(reqs demo.Requests) {
 		}
 
 		req := pb.GetTokenRequest{
-			S: &pb.DecoratorFeatureSelector{
-				DecoratorName: reqs.Decorator,
-				Environment:   reqs.Environment,
-				Tags:          tags,
+			Selector: &pb.GuardFeatureSelector{
+				GuardName:   reqs.Guard,
+				Environment: reqs.Environment,
+				Tags:        tags,
 			},
 			Weight:        &reqs.Weight,
 			PriorityBoost: &reqs.PriorityBoost,
@@ -185,7 +185,7 @@ func (r *RequestRunner) doReq(client pb.QuotaServiceClient, request *pb.GetToken
 
 	labels := make(map[string]string)
 	labels["priorityBoost"] = fmt.Sprintf("%d", *request.PriorityBoost)
-	labels["tags"] = tagsToStr(request.S.GetTags())
+	labels["tags"] = tagsToStr(request.Selector.GetTags())
 
 	ctx = metadata.AppendToOutgoingContext(ctx, "X-Stanza-Key", apikeystr)
 

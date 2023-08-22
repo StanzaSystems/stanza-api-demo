@@ -14,5 +14,5 @@ type Requests struct {
 	Ended         *time.Time
 	APIkey        string `json:"apikey"`
 	Environment   string `json:"environment"`
-	Decorator     string `json:"decorator"`
+	Guard         string `json:"guard"`
 }
